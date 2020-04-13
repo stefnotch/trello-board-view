@@ -61,16 +61,20 @@ module.exports = (env = {}) => ({
       filename: "[name].css",
     }),
     new CopyPlugin([{ from: "static", to: "" }]),
-    new OfflinePlugin({
-      responseStrategy: "network-first",
-      relativePaths: true,
-      rewrites: (asset) => asset,
-      externals: ["./", "."],
-      ServiceWorker: {
-        cacheName: "trello-board-view",
-        scope: ".",
-      },
-    }),
+    ...(env.prod
+      ? [
+          new OfflinePlugin({
+            responseStrategy: "network-first",
+            relativePaths: true,
+            rewrites: (asset) => asset,
+            externals: ["./", "."],
+            ServiceWorker: {
+              cacheName: "trello-board-view",
+              scope: ".",
+            },
+          }),
+        ]
+      : []),
   ],
   devServer: {
     inline: true,
