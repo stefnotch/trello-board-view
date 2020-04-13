@@ -2,7 +2,12 @@
   <div class="container">
     <div class="header">
       <div class="header-left">
-        <h2>Trello Roadmap Viewer</h2>
+        <h2>
+          <a
+            href="https://github.com/stefnotch/trello-board-view/"
+            class="plain-link"
+          >Trello Roadmap Viewer</a>
+        </h2>
         <span>by Stefnotch</span>
       </div>
       <div class="header-center">
@@ -221,8 +226,13 @@ button.highlight:hover {
 </style>
 
 <style scoped>
-img {
-  width: 200px;
+.plain-link {
+  text-decoration: none;
+  color: inherit;
+}
+.plain-link:hover {
+  text-decoration: underline;
+  cursor: pointer;
 }
 .header {
   display: flex;
