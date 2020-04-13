@@ -33,11 +33,11 @@
     {{trello.board}}
     <div class="lists-container">
       <div class="lists">
-        <div class="card-list" v-for="list in trello.lists" :key="list.id">
-          <h4 class="card-list-header">{{list.name}}</h4>
-          <div class="card-list-content-container">
-            <div class="card-list-content">
-              <div class="card" v-for="card in list.cards" :key="card.id">{{card.name}}</div>
+        <div class="list card" v-for="list in trello.lists" :key="list.id">
+          <h4 class="list-header">{{list.name}}</h4>
+          <div class="list-content-container">
+            <div class="list-content">
+              <div class="inset-small" v-for="card in list.cards" :key="card.id">{{card.name}}</div>
             </div>
           </div>
         </div>
@@ -227,28 +227,31 @@ h2 {
   font-size: 18px;
 }
 .lists-container {
+  display: flex;
   flex-grow: 1;
   overflow: hidden;
 }
 .lists {
+  flex-grow: 1;
   overflow-x: auto;
   overflow-y: hidden;
   display: flex;
-  height: 100%;
-  padding: 0px 24px;
+  padding: 12px;
+  padding-bottom: 6px;
 }
-.card-list {
-  padding: 6px;
-  /*overflow-y: scroll;
-  scrollbar-width: thin;
-  scrollbar-color: grey transparent;*/
+.list {
+  display: flex;
+  flex-direction: column;
+  margin: 12px;
+  padding: 0px 12px;
 }
-.card-list-content-container {
+.list-content-container {
   overflow-x: visible;
   overflow-y: scroll;
+  scrollbar-width: thin;
 }
-.card-list-content > .card {
-  padding: 6px;
+.list-content > .inset-small {
+  padding: 12px;
   margin: 12px 6px;
 }
 </style>
