@@ -114,6 +114,8 @@ export function useTrello() {
   async function fetchBoard(trelloBoardId: string) {
     boardId.value = trelloBoardId;
     // TODO: Request in parallel
+    // TODO: Caching & then figure out what happened since the last time you visited the page!
+    // Basically, display the actions that Trello doesn't display.
     board.value = await (
       await fetch(`https://api.trello.com/1/boards/${boardId.value}`)
     ).json();

@@ -3,7 +3,7 @@
   "scripts": {
     "dev": "webpack-dev-server",
     "build": "webpack --env.prod",
-    "gh-pages": "node utils/publish.js"
+    "deploy": "node utils/publish.js"
   },
   "dependencies": {
     "eva-icons": "^1.1.3",
