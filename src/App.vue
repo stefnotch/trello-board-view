@@ -1,41 +1,91 @@
 <template>
-  <div>
-    <div class="header"></div>
-    <input type="text" v-model="boardId" />
-    <button
-      v-bind:class="{'highlight': boardId != trello.boardId}"
-      class="primary"
-      v-on:click="trello.fetchBoard(boardId)"
-    >
-      Update
-      <eva-icon icon="refresh" />
-    </button>
-    <img src="./logo.png" />
-    <h1>Hello Vue 3!</h1>
-    <button @click="inc">Clicked {{ count }} times.</button>
+  <div class="container">
+    <div class="header">
+      <div class="header-left">
+        <h2>Trello Roadmap Viewer</h2>
+        <span>by Stefnotch</span>
+      </div>
+      <div class="header-center">
+        <div class="card-small" style="border: 3px solid white">
+          <div class="inset-small">
+            <input
+              type="text"
+              class="search-bar"
+              :placeholder="'Search ' + (trello.board ? trello.board.name : '')"
+            />
+          </div>
+        </div>
+      </div>
+      <div class="header-right">
+        <form class="inset-small" @submit.prevent="trello.fetchBoard(boardId)">
+          <input type="text" v-model="boardId" placeholder="Board ID" class="text-input" />
+          <button type="submit" :class="{'no-shadow': boardId == trello.boardId}">
+            <eva-icon
+              :icon="boardId != trello.boardId? 'arrow-forward' : 'refresh'"
+              :width="24"
+              :height="24"
+              :fill="boardId != trello.boardId? 'var(--foreground-highlight)':'black'"
+            />
+          </button>
+        </form>
+      </div>
+    </div>
     {{trello.board}}
+    <div class="lists-container">
+      <div class="lists">
+        <div class="card-list" v-for="list in trello.lists" :key="list.id">
+          <h4 class="card-list-header">{{list.name}}</h4>
+          <div class="card-list-content-container">
+            <div class="card-list-content">
+              <div class="card" v-for="card in list.cards" :key="card.id">{{card.name}}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script lang="ts">
-import { ref, defineComponent } from "vue";
+import { ref, defineComponent, watchEffect, watch, computed } from "vue";
 import { useTrello } from "./trello";
 import EvaIcon from "./components/EvaIcon.vue";
+
+function useURLParams() {
+  function setParam(key: string, value: string) {
+    let urlParams = new URLSearchParams(window.location.search);
+    urlParams.set(key, value);
+    history.pushState(
+      undefined,
+      "",
+      location.protocol +
+        "//" +
+        location.host +
+        location.pathname +
+        "?" +
+        urlParams +
+        location.hash
+    );
+  }
+
+  return {
+    setParam
+  };
+}
 
 export default defineComponent({
   components: { EvaIcon },
   setup() {
-    let boardId = ref("NQjLXRCP");
+    let urlParams = useURLParams();
+
+    let boardId = ref(
+      new URLSearchParams(window.location.search).get("board") || "NQjLXRCP"
+    );
     const trello = useTrello();
 
-    const count = ref(0);
-    const inc = () => {
-      count.value++;
-    };
+    watch(trello.boardId, value => urlParams.setParam("board", value));
 
     return {
-      count,
-      inc,
       boardId,
       trello
     };
@@ -46,6 +96,7 @@ export default defineComponent({
 html,
 body {
   --background: #eff1f5;
+  --foreground-highlight: rgb(112, 112, 255);
   --shadow: #b1b1a97f;
   --background-gradient: linear-gradient(
     145deg,
@@ -57,12 +108,50 @@ body {
   --blur-radius: 12px;
   --blur-light: -9px -9px 12px 1px;
   --blur-dark: 9px 9px 16px 1px;
-  --blur-small-dark: 3px 3px 12px 1px;
-  --blur-small-light: -3px -3px 12px 1px;
+  --blur-small-dark: 4px 4px 9px 1px;
+  --blur-small-light: -4px -4px 9px 1px;
+
   background-color: var(--background);
   font-family: var(--font);
   font-size: 16px;
+  margin: 0;
+  padding: 0;
+  height: 100%;
 }
+
+#app,
+.container {
+  height: 100%;
+}
+.container {
+  display: flex;
+  flex-direction: column;
+}
+
+.card {
+  box-shadow: var(--blur-light) white, var(--blur-dark) var(--shadow);
+  border-radius: 12px;
+}
+.card-small {
+  box-shadow: var(--blur-small-light) white,
+    var(--blur-small-dark) var(--shadow);
+  border-radius: 12px;
+}
+.inset {
+  box-shadow: var(--blur-dark) var(--shadow) inset,
+    var(--blur-light) white inset;
+  border-radius: 12px;
+}
+.inset-small {
+  box-shadow: var(--blur-small-dark) var(--shadow) inset,
+    var(--blur-small-light) white inset;
+  border-radius: 12px;
+}
+.no-shadow {
+  box-shadow: initial;
+  background: transparent;
+}
+
 button {
   border: 0px solid white;
   border-radius: 12px;
@@ -75,25 +164,91 @@ button {
   transition-timing-function: ease-in-out;
   font-size: 16px;
   box-shadow: var(--blur-light) white, var(--blur-dark) var(--shadow);
+  position: relative;
 }
 button:hover {
   box-shadow: var(--blur-small-dark) var(--shadow) inset,
     var(--blur-small-light) white inset;
 }
+
+/*
 button.highlight {
   box-shadow: var(--blur-light) white, var(--blur-dark) #afb7e6;
 }
 button.highlight:hover {
   box-shadow: var(--blur-small-dark) #afb7e6 inset,
     var(--blur-small-light) white inset;
-}
+}*/
+
 .primary {
   font-weight: bold;
+}
+
+.text-input {
+  background: transparent;
+  border: 0px;
+  padding: 6px 12px;
+  font-size: 14px;
+  color: rgb(61, 61, 61);
 }
 </style>
 
 <style scoped>
 img {
   width: 200px;
+}
+.header {
+  display: flex;
+
+  width: 100%;
+  padding: 6px 0px;
+  align-items: center;
+}
+.header-left {
+  padding-left: 24px;
+}
+.header-center {
+  flex-grow: 1;
+  padding-left: 24px;
+  padding-right: 24px;
+}
+.header-right {
+  padding-right: 24px;
+}
+h2 {
+  margin: 0px;
+  padding: 0px;
+}
+.search-bar {
+  padding: 12px;
+  width: 100%;
+  background: transparent;
+  border: 0px;
+  font-size: 18px;
+}
+.lists-container {
+  flex-grow: 1;
+  overflow: hidden;
+}
+.lists {
+  overflow-x: auto;
+  overflow-y: hidden;
+  display: flex;
+  height: 100%;
+  padding: 0px 24px;
+}
+.card-list {
+  padding: 6px;
+  /*overflow-y: scroll;
+  scrollbar-width: thin;
+  scrollbar-color: grey transparent;*/
+}
+.card-list-content-container {
+  overflow-x: visible;
+  overflow-y: scroll;
+}
+.card-list-content > .card {
+  padding: 6px;
+  margin: 12px 6px;
 }
 </style>

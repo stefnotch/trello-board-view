@@ -1,5 +1,5 @@
 <template>
-  <i class="eva-hover">
+  <i class="eva-hover icon">
     <svg
       xmlns="http://www.w3.org/2000/svg"
       :width="width"
@@ -8,14 +8,20 @@
       :fill="fill"
       class="eva eva-animation"
       :class="`eva-icon-hover-${animation}`"
-      v-html="iconHtml"
+      ref="iconSvg"
     />
-    <svg v-html="'abc'">a</svg>
   </i>
 </template>
+<style scoped>
+.icon {
+  vertical-align: middle;
+  padding-left: 2px;
+  padding-right: 2px;
+}
+</style>
 <script lang="ts">
 /** Taken from https://github.com/antonreshetov/vue-eva-icons */
-import { defineComponent, computed } from "vue";
+import { defineComponent, computed, ref, watch, watchEffect } from "vue";
 // @ts-ignore
 import * as eva from "eva-icons/eva";
 
@@ -27,11 +33,11 @@ export default defineComponent({
     },
     width: {
       type: [String, Number],
-      default: 24
+      default: 18
     },
     height: {
       type: [String, Number],
-      default: 24
+      default: 18
     },
     animation: {
       type: String,
@@ -43,15 +49,20 @@ export default defineComponent({
     }
   },
   setup(props, context) {
+    const iconSvg = ref<HTMLElement>();
+
     const iconHtml = computed(() =>
       eva.icons[props.icon]
-        ? (console.log(eva.icons[props.icon].contents),
-          eva.icons[props.icon].contents)
+        ? eva.icons[props.icon].contents
         : (console.error(`Unknown icon ${props.icon}`), undefined)
+    );
+    watchEffect(() =>
+      iconSvg.value ? (iconSvg.value.innerHTML = iconHtml.value) : undefined
     );
 
     return {
-      iconHtml
+      iconHtml,
+      iconSvg
     };
   }
 });

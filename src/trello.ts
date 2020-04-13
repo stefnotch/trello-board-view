@@ -1,4 +1,4 @@
-import { ref, reactive } from "vue";
+import { ref, reactive, Ref, computed } from "vue";
 
 export interface Board {
   id: string;
@@ -58,6 +58,7 @@ export interface List {
   softLimit?: any;
   idBoard: string;
   subscribed?: any;
+  cards?: Ref<Card[]>;
 }
 
 export interface Card {
@@ -124,6 +125,16 @@ export function useTrello() {
     cards.value = await (
       await fetch(`https://api.trello.com/1/boards/${boardId.value}/cards`)
     ).json();
+
+    if (lists.value) {
+      lists.value.forEach((list) => {
+        list.cards = computed(() =>
+          cards.value
+            ? cards.value.filter((card) => card.idList == list.id)
+            : []
+        );
+      });
+    }
   }
 
   return {
