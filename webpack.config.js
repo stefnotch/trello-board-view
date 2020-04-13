@@ -1,6 +1,8 @@
 const path = require("path");
 const { VueLoaderPlugin } = require("vue-loader");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const OfflinePlugin = require("offline-plugin");
+const CopyPlugin = require("copy-webpack-plugin");
 
 module.exports = (env = {}) => ({
   mode: env.prod ? "production" : "development",
@@ -57,6 +59,17 @@ module.exports = (env = {}) => ({
     new VueLoaderPlugin(),
     new MiniCssExtractPlugin({
       filename: "[name].css",
+    }),
+    new CopyPlugin([{ from: "static", to: "" }]),
+    new OfflinePlugin({
+      responseStrategy: "network-first",
+      relativePaths: true,
+      rewrites: (asset) => asset,
+      externals: ["./", "."],
+      ServiceWorker: {
+        cacheName: "trello-board-view",
+        scope: ".",
+      },
     }),
   ],
   devServer: {
