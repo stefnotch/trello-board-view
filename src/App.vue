@@ -11,6 +11,7 @@
             <input
               type="text"
               class="search-bar"
+              v-model="searchText"
               :placeholder="'Search ' + (trello.board ? trello.board.name : '')"
             />
           </div>
@@ -30,14 +31,32 @@
         </form>
       </div>
     </div>
-    {{trello.board}}
     <div class="lists-container">
       <div class="lists">
+        <!-- TODO: Hide list button so that it doesn't take up any width & remember that setting-->
         <div class="list card" v-for="list in trello.lists" :key="list.id">
           <h4 class="list-header">{{list.name}}</h4>
           <div class="list-content-container">
             <div class="list-content">
-              <div class="inset-small" v-for="card in list.cards" :key="card.id">{{card.name}}</div>
+              <div
+                class="inset-small"
+                v-for="card in list.cards"
+                :key="card.id"
+                v-show="shouldDisplay(card)"
+              >
+                {{card.name}}
+                <!-- {{card.desc}} -->
+                <!-- {{card.idChecklists}} -->
+                <!-- TODO: Progress bar & text -->
+                <div class="labels">
+                  <span
+                    v-for="label in card.labels"
+                    :key="label.id"
+                    class="label"
+                    :style="{'background-color': label.color}"
+                  >{{label.name}}</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -48,7 +67,7 @@
 
 <script lang="ts">
 import { ref, defineComponent, watchEffect, watch, computed } from "vue";
-import { useTrello } from "./trello";
+import { useTrello, Card } from "./trello";
 import EvaIcon from "./components/EvaIcon.vue";
 
 function useURLParams() {
@@ -82,12 +101,19 @@ export default defineComponent({
       new URLSearchParams(window.location.search).get("board") || "NQjLXRCP"
     );
     const trello = useTrello();
-
     watch(trello.boardId, value => urlParams.setParam("board", value));
 
+    let searchText = ref("");
+    let lowerCaseSearchText = computed(() => searchText.value.toLowerCase());
+    function shouldDisplay(card: Card) {
+      return card.name.toLowerCase().includes(lowerCaseSearchText.value);
+    }
+
     return {
+      searchText,
       boardId,
-      trello
+      trello,
+      shouldDisplay
     };
   }
 });
@@ -169,6 +195,7 @@ button {
 button:hover {
   box-shadow: var(--blur-small-dark) var(--shadow) inset,
     var(--blur-small-light) white inset;
+  cursor: pointer;
 }
 
 /*
@@ -244,6 +271,9 @@ h2 {
   flex-direction: column;
   margin: 12px;
   padding: 0px 12px;
+  min-width: 220px;
+  max-width: 220px;
+  width: 220px;
 }
 .list-content-container {
   overflow-x: visible;
@@ -253,5 +283,20 @@ h2 {
 .list-content > .inset-small {
   padding: 12px;
   margin: 12px 6px;
+}
+
+.labels {
+  margin-bottom: -8px;
+}
+.label {
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: bold;
+  padding: 0px 8px;
+  color: white;
+  margin: 0px 3px;
+  margin-bottom: -10px;
+  filter: saturate(70%) grayscale(10%);
+  display: inline-block;
 }
 </style>
