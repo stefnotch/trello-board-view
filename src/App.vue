@@ -48,7 +48,7 @@
           <div class="list-content-container">
             <div class="list-content">
               <div
-                class="inset-small"
+                class="card-small"
                 v-for="card in fullList.cards"
                 :key="card.id"
                 v-show="shouldDisplay(card)"
@@ -289,15 +289,25 @@ h2 {
   min-width: 220px;
   max-width: 220px;
   width: 220px;
+  overflow: hidden;
 }
 .list-content-container {
   overflow-x: visible;
   overflow-y: scroll;
   scrollbar-width: thin;
+  margin: -12px;
+  padding: 12px;
+  margin-bottom: 0px;
+  padding-bottom: 0px;
 }
-.list-content > .inset-small {
+.list-content > .card-small {
   padding: 12px;
   margin: 12px 6px;
+}
+.list-content > .card-small:hover {
+  box-shadow: var(--blur-small-dark) var(--shadow) inset,
+    var(--blur-small-light) white inset;
+  cursor: pointer;
 }
 
 .labels {
