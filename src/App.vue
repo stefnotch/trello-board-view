@@ -17,7 +17,7 @@
               type="text"
               class="search-bar"
               v-model="searchText"
-              :placeholder="'Search ' + (trello.board ? trello.board.name : '')"
+              :placeholder="'Search ' + (filteredBoard.board ? filteredBoard.board.name : '')"
             />
           </div>
         </div>
@@ -44,7 +44,12 @@
           <h4 class="list-header">{{list.list.name}}</h4>
           <div class="list-content-container">
             <div class="list-content">
-              <div class="card-small" v-for="card in list.filteredCards" :key="card.card.id">
+              <div
+                class="card-small"
+                v-for="card in list.filteredCards"
+                :key="card.card.id"
+                @click="openCard(card)"
+              >
                 <div class="list-item">
                   {{card.card.name}}
                   <!-- TODO: Card popup -->
@@ -197,11 +202,17 @@ export default defineComponent({
 
     const { searchText, filteredBoard } = useTrelloWithSearch(trelloState);
 
+    function openCard(card: any) {
+      //@ts-ignore
+      window.open(card.card.url, "_blank").focus();
+    }
+
     return {
       searchText,
       boardId,
       trello,
-      filteredBoard
+      filteredBoard,
+      openCard
     };
   }
 });
