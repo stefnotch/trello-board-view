@@ -51,7 +51,7 @@
                 @click="openCard(card)"
               >
                 <div class="list-item">
-                  {{card.card.name}}
+                  <div>{{card.card.name}}</div>
                   <!-- TODO: Card popup -->
                   <!-- {{card.desc}} -->
                   <!-- {{card.idChecklists}} -->
@@ -60,16 +60,24 @@
                   <!-- TODO: When searching for something, highlight the matches -->
                   <div class="search-matches" v-if="searchText.length >= 2">
                     <div>{{card.filteredDescription}}</div>
-                    <div></div>
+                    <div v-for="checklist in card.filteredChecklists" :key="checklist.checklist.id">
+                      <h5>{{checklist.checklist.name}}</h5>
+                      <ul>
+                        <li
+                          v-for="checkItem in checklist.filteredCheckItems"
+                          :key="checkItem.id"
+                        >{{checkItem}}</li>
+                      </ul>
+                    </div>
                   </div>
-                  <div class="labels">
+                  <!--  <div class="labels">
                     <span
                       v-for="label in card.card.labels"
                       :key="label.id"
                       class="label"
                       :style="{'background-color': label.color}"
                     >{{label.name}}</span>
-                  </div>
+                  </div>-->
                 </div>
                 <div
                   class="progress-bar"
@@ -297,6 +305,24 @@ button:hover {
   cursor: pointer;
 }
 
+ul {
+  position: relative;
+  list-style: none;
+  margin-left: 0;
+  padding-left: 24px;
+}
+
+ul li:before {
+  content: "";
+  width: 12px;
+  height: 12px;
+  position: absolute;
+  left: 0;
+  border-radius: 6px;
+  box-shadow: -2px -2px 4px 1px white, 2px 2px 4px 1px #b1b1a9cc,
+    2px 2px 3px 0px #b1b1a9cc inset, -2px -2px 4px 1px white inset;
+}
+
 /*
 button.highlight {
   box-shadow: var(--blur-light) white, var(--blur-dark) #afb7e6;
@@ -403,6 +429,11 @@ h2 {
   padding: 12px;
 }
 
+.search-matches {
+  font-size: 14px;
+  color: rgb(61, 61, 61);
+}
+
 .labels {
   margin-bottom: -8px;
 }
@@ -419,7 +450,7 @@ h2 {
 }
 
 .progress-bar {
-  background-color: rgb(68, 150, 68);
+  background-color: #19a187;
   height: 4px;
 }
 </style>
