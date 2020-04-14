@@ -16,7 +16,7 @@
             <input
               type="text"
               class="search-bar"
-              v-model="searchText"
+              v-model="searchInput"
               :placeholder="'Search ' + (filteredBoard.board ? filteredBoard.board.name : '')"
             />
           </div>
@@ -51,12 +51,18 @@
                 @click="openCard(card)"
               >
                 <div class="list-item">
-                  <div>{{card.card.name}}</div>
+                  <div>
+                    <highlight-matches :text="card.card.name" :highlightText="searchText"></highlight-matches>
+                  </div>
                   <!-- TODO: Card popup -->
 
-                  <!-- TODO: When searching for something, highlight the matches -->
                   <div class="search-matches" v-if="searchText.length >= 2">
-                    <div>{{card.filteredDescription}}</div>
+                    <div>
+                      <highlight-matches
+                        :text="card.filteredDescription"
+                        :highlightText="searchText"
+                      ></highlight-matches>
+                    </div>
                     <div v-for="checklist in card.filteredChecklists" :key="checklist.checklist.id">
                       <h5>{{checklist.checklist.name}}</h5>
                       <ul>
@@ -64,7 +70,9 @@
                           v-for="checkItem in checklist.filteredCheckItems"
                           :key="checkItem.id"
                           :class="{'completed': checkItem.state == 'complete'}"
-                        >{{checkItem.name}}</li>
+                        >
+                          <highlight-matches :text="checkItem.name" :highlightText="searchText"></highlight-matches>
+                        </li>
                       </ul>
                     </div>
                   </div>
@@ -97,6 +105,7 @@
 import { ref, defineComponent, watchEffect, watch, computed } from "vue";
 import { useTrello, Card, useTrelloState, TrelloState } from "./trello";
 import EvaIcon from "./components/EvaIcon.vue";
+import HighlightMatches from "./components/HighlightMatches.vue";
 
 function useURLParams() {
   function getParam(key: string) {
@@ -126,13 +135,16 @@ function useURLParams() {
 }
 
 function useTrelloWithSearch(trelloState: TrelloState) {
-  let searchText = ref("");
-  let lowerCaseSearchText = computed(() => searchText.value.toLowerCase());
+  let searchInput = ref("");
+  let searchText = computed(() =>
+    searchInput.value.length >= 2 ? searchInput.value.toLowerCase() : ""
+  );
 
   function isMatch(text: string) {
-    return text.toLowerCase().includes(lowerCaseSearchText.value);
+    return text.toLowerCase().includes(searchText.value);
   }
 
+  // TODO: This is the perf killer
   const filteredLists = computed(() => {
     return trelloState.lists.map(list => {
       return {
@@ -156,7 +168,7 @@ function useTrelloWithSearch(trelloState: TrelloState) {
 
             return {
               card: card,
-              completionRate: cardCount ? completedCardCount / cardCount : 0,
+              completionRate: 0, // cardCount ? completedCardCount / cardCount : 0,
               filteredDescription: isMatch(card.desc) ? card.desc : "",
               filteredChecklists: cardChecklists
                 .map(checklist => {
@@ -191,13 +203,14 @@ function useTrelloWithSearch(trelloState: TrelloState) {
   });
 
   return {
+    searchInput,
     searchText,
     filteredBoard
   };
 }
 
 export default defineComponent({
-  components: { EvaIcon },
+  components: { EvaIcon, HighlightMatches },
   setup() {
     let urlParams = useURLParams();
 
@@ -208,7 +221,9 @@ export default defineComponent({
     watch(trello.boardId, value => urlParams.setParam("board", value));
     trello.tryLoadCachedBoard(boardId.value);
 
-    const { searchText, filteredBoard } = useTrelloWithSearch(trelloState);
+    const { searchInput, searchText, filteredBoard } = useTrelloWithSearch(
+      trelloState
+    );
 
     function openCard(card: any) {
       //@ts-ignore
@@ -216,6 +231,7 @@ export default defineComponent({
     }
 
     return {
+      searchInput,
       searchText,
       boardId,
       trello,
