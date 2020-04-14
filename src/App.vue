@@ -36,30 +36,30 @@
         </form>
       </div>
     </div>
+    <!-- TODO: make it clear that those are the cached values! -->
     <div class="lists-container">
       <div class="lists">
         <!-- TODO: Hide list button so that it doesn't take up any width & remember that setting-->
-        <div
-          class="list card"
-          v-for="fullList in trello.fullBoard.fullLists"
-          :key="fullList.list.id"
-        >
-          <h4 class="list-header">{{fullList.list.name}}</h4>
+        <div class="list card" v-for="list in filteredBoard.filteredLists" :key="list.list.id">
+          <h4 class="list-header">{{list.list.name}}</h4>
           <div class="list-content-container">
             <div class="list-content">
-              <div
-                class="card-small"
-                v-for="card in fullList.cards"
-                :key="card.id"
-                v-show="shouldDisplay(card)"
-              >
-                {{card.name}}
+              <div class="card-small" v-for="card in list.filteredCards" :key="card.card.id">
+                {{card.card.name}}
+                <!-- TODO: Card popup -->
                 <!-- {{card.desc}} -->
                 <!-- {{card.idChecklists}} -->
-                <!-- TODO: Progress bar & text -->
+                <!-- TODO: Progress bar! -->
+
+                <!-- TODO: When searching for something, as soon as the user entered 2 characters, show the matching card text/checklist items -->
+                <!-- TODO: When searching for something, highlight the matches -->
+                <div class="search-matches" v-if="searchText.length >= 2">
+                  <div>{{card.filteredDescription}}</div>
+                  <div></div>
+                </div>
                 <div class="labels">
                   <span
-                    v-for="label in card.labels"
+                    v-for="label in card.card.labels"
                     :key="label.id"
                     class="label"
                     :style="{'background-color': label.color}"
@@ -76,10 +76,14 @@
 
 <script lang="ts">
 import { ref, defineComponent, watchEffect, watch, computed } from "vue";
-import { useTrello, Card } from "./trello";
+import { useTrello, Card, useTrelloState, TrelloState } from "./trello";
 import EvaIcon from "./components/EvaIcon.vue";
 
 function useURLParams() {
+  function getParam(key: string) {
+    return new URLSearchParams(window.location.search).get(key);
+  }
+
   function setParam(key: string, value: string) {
     let urlParams = new URLSearchParams(window.location.search);
     urlParams.set(key, value);
@@ -97,7 +101,73 @@ function useURLParams() {
   }
 
   return {
+    getParam,
     setParam
+  };
+}
+
+function useTrelloSearch(trelloState: TrelloState) {
+  let searchText = ref("");
+  let lowerCaseSearchText = computed(() => searchText.value.toLowerCase());
+
+  function isMatch(text: string) {
+    return text.toLowerCase().includes(lowerCaseSearchText.value);
+  }
+
+  const filteredLists = computed(() => {
+    if (trelloState.lists) {
+      return trelloState.lists.map(list => {
+        return {
+          list: list,
+          filteredCards: trelloState.cards
+            ? trelloState.cards
+                .filter(card => card.idList == list.id)
+                .map(card => {
+                  return {
+                    card: card,
+                    filteredDescription: isMatch(card.desc) ? card.desc : "",
+                    filteredChecklists: trelloState.checklists
+                      ? trelloState.checklists
+                          .filter(checklist => checklist.idCard == card.id)
+                          .map(checklist => {
+                            return {
+                              checklist: checklist,
+                              filteredCheckItems: checklist.checkItems.filter(
+                                checkitem => isMatch(checkitem.name)
+                              )
+                            };
+                          })
+                          .filter(
+                            filteredChecklist =>
+                              filteredChecklist.filteredCheckItems.length > 0
+                          )
+                      : []
+                  };
+                })
+                .filter(
+                  fullCard =>
+                    isMatch(fullCard.card.name) ||
+                    !!fullCard.filteredDescription ||
+                    fullCard.filteredChecklists.length > 0
+                )
+            : []
+        };
+      });
+    } else {
+      return [];
+    }
+  });
+
+  const filteredBoard = computed(() => {
+    return {
+      board: trelloState.board,
+      filteredLists: filteredLists.value
+    };
+  });
+
+  return {
+    searchText,
+    filteredBoard
   };
 }
 
@@ -106,24 +176,20 @@ export default defineComponent({
   setup() {
     let urlParams = useURLParams();
 
-    let boardId = ref(
-      new URLSearchParams(window.location.search).get("board") || "NQjLXRCP"
-    );
-    const trello = useTrello();
+    let boardId = ref(urlParams.getParam("board") || "NQjLXRCP");
+
+    const { trelloState } = useTrelloState();
+    const trello = useTrello(trelloState);
     watch(trello.boardId, value => urlParams.setParam("board", value));
     trello.tryLoadCachedBoard(boardId.value);
 
-    let searchText = ref("");
-    let lowerCaseSearchText = computed(() => searchText.value.toLowerCase());
-    function shouldDisplay(card: Card) {
-      return card.name.toLowerCase().includes(lowerCaseSearchText.value);
-    }
+    const { searchText, filteredBoard } = useTrelloSearch(trelloState);
 
     return {
       searchText,
       boardId,
       trello,
-      shouldDisplay
+      filteredBoard
     };
   }
 });
