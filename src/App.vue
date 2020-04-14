@@ -38,38 +38,44 @@
     </div>
     <!-- TODO: make it clear that those are the cached values! -->
     <div class="lists-container">
-      <div class="lists">
+      <div class="lists" v-if="filteredBoard">
         <!-- TODO: Hide list button so that it doesn't take up any width & remember that setting-->
         <div class="list card" v-for="list in filteredBoard.filteredLists" :key="list.list.id">
           <h4 class="list-header">{{list.list.name}}</h4>
           <div class="list-content-container">
             <div class="list-content">
               <div class="card-small" v-for="card in list.filteredCards" :key="card.card.id">
-                {{card.card.name}}
-                <!-- TODO: Card popup -->
-                <!-- {{card.desc}} -->
-                <!-- {{card.idChecklists}} -->
-                <!-- TODO: Progress bar! -->
+                <div class="list-item">
+                  {{card.card.name}}
+                  <!-- TODO: Card popup -->
+                  <!-- {{card.desc}} -->
+                  <!-- {{card.idChecklists}} -->
 
-                <!-- TODO: When searching for something, as soon as the user entered 2 characters, show the matching card text/checklist items -->
-                <!-- TODO: When searching for something, highlight the matches -->
-                <div class="search-matches" v-if="searchText.length >= 2">
-                  <div>{{card.filteredDescription}}</div>
-                  <div></div>
+                  <!-- TODO: When searching for something, as soon as the user entered 2 characters, show the matching card text/checklist items -->
+                  <!-- TODO: When searching for something, highlight the matches -->
+                  <div class="search-matches" v-if="searchText.length >= 2">
+                    <div>{{card.filteredDescription}}</div>
+                    <div></div>
+                  </div>
+                  <div class="labels">
+                    <span
+                      v-for="label in card.card.labels"
+                      :key="label.id"
+                      class="label"
+                      :style="{'background-color': label.color}"
+                    >{{label.name}}</span>
+                  </div>
                 </div>
-                <div class="labels">
-                  <span
-                    v-for="label in card.card.labels"
-                    :key="label.id"
-                    class="label"
-                    :style="{'background-color': label.color}"
-                  >{{label.name}}</span>
-                </div>
+                <div
+                  class="progress-bar"
+                  :style="{'width': Math.round(card.completionRate * 100)+ '%'}"
+                >-</div>
               </div>
             </div>
           </div>
         </div>
       </div>
+      <div v-else>No board selected</div>
     </div>
   </div>
 </template>
@@ -106,7 +112,7 @@ function useURLParams() {
   };
 }
 
-function useTrelloSearch(trelloState: TrelloState) {
+function useTrelloWithSearch(trelloState: TrelloState) {
   let searchText = ref("");
   let lowerCaseSearchText = computed(() => searchText.value.toLowerCase());
 
@@ -115,47 +121,53 @@ function useTrelloSearch(trelloState: TrelloState) {
   }
 
   const filteredLists = computed(() => {
-    if (trelloState.lists) {
-      return trelloState.lists.map(list => {
-        return {
-          list: list,
-          filteredCards: trelloState.cards
-            ? trelloState.cards
-                .filter(card => card.idList == list.id)
-                .map(card => {
+    return trelloState.lists.map(list => {
+      return {
+        list: list,
+        filteredCards: trelloState.cards
+          .filter(card => card.idList == list.id)
+          .map(card => {
+            let cardChecklists = trelloState.checklists.filter(
+              checklist => checklist.idCard == card.id
+            );
+
+            let completedCardCount = cardChecklists.flatMap(checklist =>
+              checklist.checkItems.filter(
+                checkItem => checkItem.state == "complete"
+              )
+            ).length;
+
+            let cardCount = cardChecklists.flatMap(
+              checklist => checklist.checkItems
+            ).length;
+
+            return {
+              card: card,
+              completionRate: cardCount ? completedCardCount / cardCount : 0,
+              filteredDescription: isMatch(card.desc) ? card.desc : "",
+              filteredChecklists: cardChecklists
+                .map(checklist => {
                   return {
-                    card: card,
-                    filteredDescription: isMatch(card.desc) ? card.desc : "",
-                    filteredChecklists: trelloState.checklists
-                      ? trelloState.checklists
-                          .filter(checklist => checklist.idCard == card.id)
-                          .map(checklist => {
-                            return {
-                              checklist: checklist,
-                              filteredCheckItems: checklist.checkItems.filter(
-                                checkitem => isMatch(checkitem.name)
-                              )
-                            };
-                          })
-                          .filter(
-                            filteredChecklist =>
-                              filteredChecklist.filteredCheckItems.length > 0
-                          )
-                      : []
+                    checklist: checklist,
+                    filteredCheckItems: checklist.checkItems.filter(checkitem =>
+                      isMatch(checkitem.name)
+                    )
                   };
                 })
                 .filter(
-                  fullCard =>
-                    isMatch(fullCard.card.name) ||
-                    !!fullCard.filteredDescription ||
-                    fullCard.filteredChecklists.length > 0
+                  filteredChecklist =>
+                    filteredChecklist.filteredCheckItems.length > 0
                 )
-            : []
-        };
-      });
-    } else {
-      return [];
-    }
+            };
+          })
+          .filter(
+            fullCard =>
+              isMatch(fullCard.card.name) ||
+              !!fullCard.filteredDescription ||
+              fullCard.filteredChecklists.length > 0
+          )
+      };
+    });
   });
 
   const filteredBoard = computed(() => {
@@ -183,7 +195,7 @@ export default defineComponent({
     watch(trello.boardId, value => urlParams.setParam("board", value));
     trello.tryLoadCachedBoard(boardId.value);
 
-    const { searchText, filteredBoard } = useTrelloSearch(trelloState);
+    const { searchText, filteredBoard } = useTrelloWithSearch(trelloState);
 
     return {
       searchText,
@@ -366,14 +378,18 @@ h2 {
   margin-bottom: 0px;
   padding-bottom: 0px;
 }
-.list-content > .card-small {
-  padding: 12px;
+.list-content > div {
+  padding: 0px;
   margin: 12px 6px;
+  overflow: hidden;
 }
 .list-content > .card-small:hover {
   box-shadow: var(--blur-small-dark) var(--shadow) inset,
     var(--blur-small-light) white inset;
   cursor: pointer;
+}
+.list-item {
+  padding: 12px;
 }
 
 .labels {
@@ -389,5 +405,10 @@ h2 {
   margin-bottom: -10px;
   filter: saturate(70%) grayscale(10%);
   display: inline-block;
+}
+
+.progress-bar {
+  background-color: rgb(68, 150, 68);
+  height: 4px;
 }
 </style>
