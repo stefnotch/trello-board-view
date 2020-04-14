@@ -98,6 +98,26 @@ export interface Card {
   };
 }
 
+export interface Checklist {
+  id: string;
+  name: string;
+  idCard: string;
+  pos: number;
+  idBoard: string;
+  checkItems: CheckItem[];
+}
+
+export interface CheckItem {
+  idChecklist: string;
+  state: string;
+  idMember: any;
+  id: string;
+  name: string;
+  nameData: any;
+  pos: number;
+  due: any;
+}
+
 export interface Label {
   id: string;
   idBoard: string;
@@ -106,87 +126,96 @@ export interface Label {
 }
 
 interface CachedTrelloBoard {
-  board: Board;
-  lists: List[];
-  cards: Card[];
+  state: TrelloState;
   date: Date;
 }
 
-export function useTrello() {
+export interface TrelloState {
+  board: Board | undefined;
+  lists: List[];
+  cards: Card[];
+  checklists: Checklist[];
+}
+
+export function useTrelloState() {
+  const state: TrelloState = reactive({
+    board: undefined as Board | undefined,
+    lists: [] as List[],
+    cards: [] as Card[],
+    checklists: [] as Checklist[],
+  });
+
+  return { trelloState: state };
+}
+
+export function useTrello(trelloState: TrelloState) {
   const { setCacheValue, getCacheValue } = useLocalCache();
 
   const boardId = ref("");
-  const board = ref<Board>();
-  const lists = ref<List[]>();
-  const cards = ref<Card[]>();
-
-  const fullLists = computed(() => {
-    if (lists.value) {
-      return lists.value.map((list) => {
-        return {
-          list: list,
-          cards: cards.value
-            ? cards.value.filter((card) => card.idList == list.id)
-            : [],
-        };
-      });
-    } else {
-      return [];
-    }
-  });
-
-  const fullBoard = computed(() => {
-    return {
-      board: board.value,
-      fullLists: fullLists.value,
-    };
-  });
 
   function tryLoadCachedBoard(trelloBoardId: string) {
     let cachedValues = getCacheValue<CachedTrelloBoard>(
       `trello-board-${trelloBoardId}`
     );
 
-    if (cachedValues) {
-      board.value = cachedValues.board;
-      lists.value = cachedValues.lists;
-      cards.value = cachedValues.cards;
+    if (cachedValues && cachedValues.state) {
+      trelloState.board = cachedValues.state.board;
+      trelloState.lists = cachedValues.state.lists;
+      trelloState.cards = cachedValues.state.cards;
+      trelloState.checklists = cachedValues.state.checklists;
     }
   }
 
   async function fetchBoard(trelloBoardId: string) {
     boardId.value = trelloBoardId;
+    trelloState.board = undefined;
+    trelloState.lists = [];
+    trelloState.cards = [];
+    trelloState.checklists = [];
     // TODO: figure out what happened since the last time you visited the page!
     // Basically, display the actions that Trello doesn't display.
     try {
       let boardFetch = fetch(`https://api.trello.com/1/boards/${boardId.value}`)
         .then((r) => r.json())
-        .then((val) => (board.value = val));
+        .then((val) => (trelloState.board = val));
       let listsFetch = fetch(
         `https://api.trello.com/1/boards/${boardId.value}/lists`
       )
         .then((r) => r.json())
-        .then((val) => (lists.value = val));
+        .then((val) => (trelloState.lists = val));
       let cardsFetch = fetch(
         `https://api.trello.com/1/boards/${boardId.value}/cards`
       )
         .then((r) => r.json())
-        .then((val) => (cards.value = val));
+        .then((val) => (trelloState.cards = val));
 
-      await Promise.all([boardFetch, listsFetch, cardsFetch]);
+      let checklistsFetch = fetch(
+        `https://api.trello.com/1/boards/${boardId.value}/checklists`
+      )
+        .then((r) => r.json())
+        .then((val) => (trelloState.checklists = val));
+
+      await Promise.all([boardFetch, listsFetch, cardsFetch, checklistsFetch]);
     } catch (e) {
       console.warn(e);
-      let allHaveValues = !!board.value && !!lists.value && !!cards.value;
-      if (!allHaveValues) {
+      let allHaveValues =
+        !!trelloState.board &&
+        !!trelloState.lists &&
+        !!trelloState.cards &&
+        !!trelloState.checklists;
+      if (allHaveValues) {
         tryLoadCachedBoard(boardId.value);
       }
     }
 
-    if (board.value && lists.value && cards.value) {
+    if (
+      !!trelloState.board &&
+      !!trelloState.lists &&
+      !!trelloState.cards &&
+      !!trelloState.checklists
+    ) {
       setCacheValue<CachedTrelloBoard>(`trello-board-${trelloBoardId}`, {
-        board: board.value,
-        lists: lists.value,
-        cards: cards.value,
+        state: trelloState,
         date: new Date(),
       });
     }
@@ -194,11 +223,7 @@ export function useTrello() {
 
   return {
     boardId,
-    board,
-    lists,
-    cards,
     fetchBoard,
     tryLoadCachedBoard,
-    fullBoard,
   };
 }
