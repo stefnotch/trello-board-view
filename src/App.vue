@@ -53,10 +53,7 @@
                 <div class="list-item">
                   <div>{{card.card.name}}</div>
                   <!-- TODO: Card popup -->
-                  <!-- {{card.desc}} -->
-                  <!-- {{card.idChecklists}} -->
 
-                  <!-- TODO: When searching for something, as soon as the user entered 2 characters, show the matching card text/checklist items -->
                   <!-- TODO: When searching for something, highlight the matches -->
                   <div class="search-matches" v-if="searchText.length >= 2">
                     <div>{{card.filteredDescription}}</div>
@@ -66,18 +63,21 @@
                         <li
                           v-for="checkItem in checklist.filteredCheckItems"
                           :key="checkItem.id"
-                        >{{checkItem}}</li>
+                          :class="{'completed': checkItem.state == 'complete'}"
+                        >{{checkItem.name}}</li>
                       </ul>
                     </div>
                   </div>
-                  <!--  <div class="labels">
+                  <div class="labels">
                     <span
                       v-for="label in card.card.labels"
                       :key="label.id"
                       class="label"
-                      :style="{'background-color': label.color}"
-                    >{{label.name}}</span>
-                  </div>-->
+                      :style="{'color': label.color != 'yellow'?label.color:'#5B5B00'}"
+                    >
+                      <span class="label-text">{{label.name}}</span>
+                    </span>
+                  </div>
                 </div>
                 <div
                   class="progress-bar"
@@ -323,15 +323,6 @@ ul li:before {
     2px 2px 3px 0px #b1b1a9cc inset, -2px -2px 4px 1px white inset;
 }
 
-/*
-button.highlight {
-  box-shadow: var(--blur-light) white, var(--blur-dark) #afb7e6;
-}
-button.highlight:hover {
-  box-shadow: var(--blur-small-dark) #afb7e6 inset,
-    var(--blur-small-light) white inset;
-}*/
-
 .primary {
   font-weight: bold;
 }
@@ -434,19 +425,28 @@ h2 {
   color: rgb(61, 61, 61);
 }
 
+ul li.completed:before {
+  box-shadow: -2px -2px 4px 1px white, 2px 2px 4px 1px #b1b1a9cc,
+    1px 1px 2px 0px white inset, -1px -1px 2px 0px #b1b1a9cc inset;
+  background: #19a187;
+}
+
 .labels {
   margin-bottom: -8px;
 }
 .label {
   border-radius: 6px;
+  letter-spacing: 0.5px;
   font-size: 12px;
-  font-weight: bold;
   padding: 0px 8px;
-  color: white;
+  /*color: white;*/
   margin: 0px 3px;
   margin-bottom: -10px;
-  filter: saturate(70%) grayscale(10%);
   display: inline-block;
+  box-shadow: -2px -2px 4px 1px white, 2px 2px 4px 1px #b1b1a9cc;
+}
+.label-text {
+  filter: brightness(80%) saturate(90%);
 }
 
 .progress-bar {
