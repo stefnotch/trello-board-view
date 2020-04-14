@@ -39,13 +39,17 @@
     <div class="lists-container">
       <div class="lists">
         <!-- TODO: Hide list button so that it doesn't take up any width & remember that setting-->
-        <div class="list card" v-for="list in trello.lists" :key="list.id">
-          <h4 class="list-header">{{list.name}}</h4>
+        <div
+          class="list card"
+          v-for="fullList in trello.fullBoard.fullLists"
+          :key="fullList.list.id"
+        >
+          <h4 class="list-header">{{fullList.list.name}}</h4>
           <div class="list-content-container">
             <div class="list-content">
               <div
                 class="inset-small"
-                v-for="card in list.cards"
+                v-for="card in fullList.cards"
                 :key="card.id"
                 v-show="shouldDisplay(card)"
               >
@@ -107,6 +111,7 @@ export default defineComponent({
     );
     const trello = useTrello();
     watch(trello.boardId, value => urlParams.setParam("board", value));
+    trello.tryLoadCachedBoard(boardId.value);
 
     let searchText = ref("");
     let lowerCaseSearchText = computed(() => searchText.value.toLowerCase());
