@@ -41,7 +41,7 @@
     </div>
     <!-- TODO: make it clear that those are the cached values! -->
     <div class="lists-container">
-      <div class="lists" v-if="filteredBoard">
+      <div class="lists" v-if="filteredBoard.board">
         <!-- TODO: Hide list button so that it doesn't take up any width & remember that setting-->
         <div class="list card" v-for="list in filteredBoard.filteredLists" :key="list.list.id">
           <h4 class="list-header">{{list.list.name}}</h4>
@@ -93,14 +93,16 @@
                 <div
                   class="progress-bar"
                   :style="{'width': Math.round(card.completionRate * 100)+ '%'}"
-                >-</div>
+                ></div>
               </div>
             </div>
           </div>
         </div>
       </div>
-      <div v-else>No board selected</div>
+      <div v-else class="no-board">No board selected</div>
     </div>
+
+    <div id="popup-window"></div>
   </div>
 </template>
 
@@ -405,6 +407,8 @@ h2 {
 }
 .search-bar {
   white-space: nowrap;
+  display: flex;
+  align-items: center;
 }
 .search-bar-icon {
   color: black;
@@ -416,6 +420,7 @@ h2 {
   background: transparent;
   border: 0px;
   font-size: 18px;
+  flex: 1;
 }
 .search-bar-input::placeholder {
   color: black;
@@ -499,5 +504,11 @@ ul li.completed:before {
 .progress-bar {
   background-color: #19a187;
   height: 4px;
+}
+
+.no-board {
+  width: 100%;
+  text-align: center;
+  padding-top: 4em;
 }
 </style>
