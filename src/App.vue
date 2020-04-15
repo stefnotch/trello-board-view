@@ -13,12 +13,15 @@
       <div class="header-center">
         <div class="card-small" style="border: 3px solid white">
           <div class="inset-small">
-            <input
-              type="text"
-              class="search-bar"
-              v-model="searchInput"
-              :placeholder="'Search ' + (filteredBoard.board ? filteredBoard.board.name : '')"
-            />
+            <label class="search-bar">
+              <eva-icon icon="search" :width="24" :height="24" class="search-bar-icon"></eva-icon>
+              <input
+                type="text"
+                class="search-bar-input"
+                v-model="searchInput"
+                :placeholder="'Search ' + (filteredBoard.board ? filteredBoard.board.name : '')"
+              />
+            </label>
           </div>
         </div>
       </div>
@@ -144,33 +147,50 @@ function useTrelloWithSearch(trelloState: TrelloState) {
     return text.toLowerCase().includes(searchText.value);
   }
 
-  // TODO: This is the perf killer
-  const filteredLists = computed(() => {
+  const allLists = computed(() => {
     return trelloState.lists.map(list => {
       return {
         list: list,
-        filteredCards: trelloState.cards
+        cards: trelloState.cards
           .filter(card => card.idList == list.id)
           .map(card => {
-            let cardChecklists = trelloState.checklists.filter(
-              checklist => checklist.idCard == card.id
-            );
-
-            let completedCardCount = cardChecklists.flatMap(checklist =>
-              checklist.checkItems.filter(
-                checkItem => checkItem.state == "complete"
-              )
-            ).length;
-
-            let cardCount = cardChecklists.flatMap(
-              checklist => checklist.checkItems
-            ).length;
-
             return {
               card: card,
-              completionRate: 0, // cardCount ? completedCardCount / cardCount : 0,
-              filteredDescription: isMatch(card.desc) ? card.desc : "",
-              filteredChecklists: cardChecklists
+              checklists: trelloState.checklists.filter(
+                checklist => checklist.idCard == card.id
+              )
+            };
+          })
+      };
+    });
+  });
+
+  const filteredLists = computed(() => {
+    return allLists.value.map(list => {
+      return {
+        list: list.list,
+        filteredCards: list.cards
+          .map(card => {
+            let checkItemsCount = 0;
+            let completedCheckItemsCount = 0;
+            card.checklists.forEach(checklist =>
+              checklist.checkItems.forEach(item => {
+                checkItemsCount++;
+                if (item.state == "complete") {
+                  completedCheckItemsCount++;
+                }
+              })
+            );
+
+            return {
+              card: card.card,
+              completionRate: checkItemsCount
+                ? completedCheckItemsCount / checkItemsCount
+                : 0,
+              filteredDescription: isMatch(card.card.desc)
+                ? card.card.desc
+                : "",
+              filteredChecklists: card.checklists
                 .map(checklist => {
                   return {
                     checklist: checklist,
@@ -384,11 +404,22 @@ h2 {
   padding: 0px;
 }
 .search-bar {
+  white-space: nowrap;
+}
+.search-bar-icon {
+  color: black;
+  opacity: 0.6;
+  padding-left: 12px;
+}
+.search-bar-input {
   padding: 12px;
-  width: 100%;
   background: transparent;
   border: 0px;
   font-size: 18px;
+}
+.search-bar-input::placeholder {
+  color: black;
+  opacity: 0.6;
 }
 .lists-container {
   display: flex;
