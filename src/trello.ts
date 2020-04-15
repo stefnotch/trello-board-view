@@ -163,7 +163,9 @@ export function useTrello(trelloState: TrelloState) {
       trelloState.lists = cachedValues.state.lists;
       trelloState.cards = cachedValues.state.cards;
       trelloState.checklists = cachedValues.state.checklists;
+      return true;
     }
+    return false;
   }
 
   async function fetchBoard(trelloBoardId: string) {

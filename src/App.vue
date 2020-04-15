@@ -236,12 +236,15 @@ export default defineComponent({
   setup() {
     let urlParams = useURLParams();
 
-    let boardId = ref(urlParams.getParam("board") || "NQjLXRCP");
+    let boardId = ref(urlParams.getParam("board") || "");
 
     const { trelloState } = useTrelloState();
     const trello = useTrello(trelloState);
     watch(trello.boardId, value => urlParams.setParam("board", value));
-    trello.tryLoadCachedBoard(boardId.value);
+    let loadedFromCache = trello.tryLoadCachedBoard(boardId.value);
+    if (!loadedFromCache && !!boardId.value) {
+      trello.fetchBoard(boardId.value);
+    }
 
     const { searchInput, searchText, filteredBoard } = useTrelloWithSearch(
       trelloState
