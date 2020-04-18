@@ -152,6 +152,9 @@ export function useTrello(trelloState: TrelloState) {
   const { setCacheValue, getCacheValue } = useLocalCache();
 
   const boardId = ref("");
+  const cachedBoardIds = ref<Set<string>>(
+    new Set<string>(getCacheValue<string[]>("trello-boards") || ["NQjLXRCP"])
+  );
 
   function tryLoadCachedBoard(trelloBoardId: string) {
     let cachedValues = getCacheValue<CachedTrelloBoard>(
@@ -170,7 +173,7 @@ export function useTrello(trelloState: TrelloState) {
 
   async function fetchBoard(trelloBoardId: string) {
     boardId.value = trelloBoardId;
-    trelloState.board = undefined;
+    trelloState.board = undefined as Board | undefined;
     trelloState.lists = [];
     trelloState.cards = [];
     trelloState.checklists = [];
@@ -179,23 +182,23 @@ export function useTrello(trelloState: TrelloState) {
     try {
       let boardFetch = fetch(`https://api.trello.com/1/boards/${boardId.value}`)
         .then((r) => r.json())
-        .then((val) => (trelloState.board = val));
+        .then((val) => (trelloState.board = val as Board | undefined));
       let listsFetch = fetch(
         `https://api.trello.com/1/boards/${boardId.value}/lists`
       )
         .then((r) => r.json())
-        .then((val) => (trelloState.lists = val));
+        .then((val) => (trelloState.lists = (val || []) as List[]));
       let cardsFetch = fetch(
         `https://api.trello.com/1/boards/${boardId.value}/cards`
       )
         .then((r) => r.json())
-        .then((val) => (trelloState.cards = val));
+        .then((val) => (trelloState.cards = (val || []) as Card[]));
 
       let checklistsFetch = fetch(
         `https://api.trello.com/1/boards/${boardId.value}/checklists`
       )
         .then((r) => r.json())
-        .then((val) => (trelloState.checklists = val));
+        .then((val) => (trelloState.checklists = (val || []) as Checklist[]));
 
       await Promise.all([boardFetch, listsFetch, cardsFetch, checklistsFetch]);
     } catch (e) {
@@ -220,6 +223,11 @@ export function useTrello(trelloState: TrelloState) {
         state: trelloState,
         date: new Date(),
       });
+      cachedBoardIds.value.add(trelloBoardId);
+      setCacheValue<string[]>(
+        `trello-boards`,
+        Array.from(cachedBoardIds.value.values())
+      );
     }
   }
 
@@ -227,5 +235,6 @@ export function useTrello(trelloState: TrelloState) {
     boardId,
     fetchBoard,
     tryLoadCachedBoard,
+    cachedBoardIds,
   };
 }
