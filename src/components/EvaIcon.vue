@@ -8,7 +8,7 @@
       :fill="fill"
       class="eva eva-animation"
       :class="`eva-icon-hover-${animation}`"
-      ref="iconSvg"
+      v-html="iconHtml"
     />
   </i>
 </template>
@@ -56,13 +56,9 @@ export default defineComponent({
         ? eva.icons[props.icon].contents
         : (console.error(`Unknown icon ${props.icon}`), undefined)
     );
-    watchEffect(() =>
-      iconSvg.value ? (iconSvg.value.innerHTML = iconHtml.value) : undefined
-    );
 
     return {
-      iconHtml,
-      iconSvg
+      iconHtml
     };
   }
 });
