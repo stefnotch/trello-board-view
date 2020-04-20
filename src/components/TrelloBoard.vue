@@ -1,6 +1,54 @@
 <template>
   <!-- TODO: make it clear that those are the cached values! -->
   <div class="lists-container">
+    <teleport to="#popup-window">
+      <div class="open-card-popup" v-if="openCard" @click.self="openCard = undefined">
+        <div class="open-card">
+          <div class="list-item">
+            <div>
+              <h3>
+                <a :href="openCard.card.url" class="plain-link">
+                  {{openCard.card.name}}
+                  <eva-icon icon="external-link" fill="var(--foreground-highlight)" />
+                </a>
+              </h3>
+            </div>
+
+            <div class="labels">
+              <span
+                v-for="label in openCard.card.labels"
+                :key="label.id"
+                class="label"
+                :style="{'color': label.color != 'yellow'?label.color:'#5B5B00'}"
+              >
+                <span class="label-text">{{label.name}}</span>
+              </span>
+            </div>
+
+            <div class="scrollbar-y">
+              <div class="description">{{openCard.card.desc}}</div>
+              <div v-for="checklist in openCard.checklists" :key="checklist.id">
+                <h5>{{checklist.name}}</h5>
+                <ul>
+                  <li
+                    v-for="checkItem in checklist.checkItems"
+                    :key="checkItem.id"
+                    :class="{'completed': checkItem.state == 'complete'}"
+                  >
+                    <highlight-matches :text="checkItem.name" :highlightText="searchText"></highlight-matches>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <div
+            class="progress-bar"
+            :style="{'width': Math.round(openCard.completionRate * 100)+ '%'}"
+          ><!--{{openCard.itemsCompleted}}/{{openCard.itemsCount}}--></div>
+        </div>
+      </div>
+    </teleport>
+
     <div class="lists" v-if="filteredBoard.board">
       <!-- TODO: Hide list button so that it doesn't take up any width & remember that setting-->
       <div class="list card" v-for="list in filteredBoard.filteredLists" :key="list.list.id">
@@ -11,16 +59,26 @@
               class="card-small"
               v-for="card in list.filteredCards"
               :key="card.card.id"
-              @click="openCard(card)"
+              @click="openCard = card.fullCard"
             >
               <div class="list-item">
                 <div>
                   <highlight-matches :text="card.card.name" :highlightText="searchText"></highlight-matches>
                 </div>
-                <!-- TODO: Card popup -->
+
+                <div class="labels">
+                  <span
+                    v-for="label in card.card.labels"
+                    :key="label.id"
+                    class="label"
+                    :style="{'color': label.color != 'yellow'?label.color:'#5B5B00'}"
+                  >
+                    <span class="label-text">{{label.name}}</span>
+                  </span>
+                </div>
 
                 <div class="search-matches" v-if="searchText.length >= 2">
-                  <div>
+                  <div class="description">
                     <highlight-matches :text="card.filteredDescription" :highlightText="searchText"></highlight-matches>
                   </div>
                   <div v-for="checklist in card.filteredChecklists" :key="checklist.checklist.id">
@@ -35,16 +93,6 @@
                       </li>
                     </ul>
                   </div>
-                </div>
-                <div class="labels">
-                  <span
-                    v-for="label in card.card.labels"
-                    :key="label.id"
-                    class="label"
-                    :style="{'color': label.color != 'yellow'?label.color:'#5B5B00'}"
-                  >
-                    <span class="label-text">{{label.name}}</span>
-                  </span>
                 </div>
               </div>
               <div
@@ -70,16 +118,22 @@ import {
   PropType,
   Ref,
   toRef,
-  toRefs
+  toRefs,
+  reactive
 } from "vue";
-import { useTrello, Card, useTrelloState, TrelloState } from "./../trello";
+import {
+  useTrello,
+  Card,
+  useTrelloState,
+  TrelloState,
+  Checklist,
+  FullBoard,
+  FullCard
+} from "./../trello";
 import EvaIcon from "./EvaIcon.vue";
 import HighlightMatches from "./HighlightMatches.vue";
 
-function useTrelloWithSearch(
-  trelloState: TrelloState,
-  searchInput: Ref<string>
-) {
+function useTrelloWithSearch(trelloBoard: FullBoard, searchInput: Ref<string>) {
   let searchText = computed(() =>
     searchInput.value.length >= 2 ? searchInput.value.toLowerCase() : ""
   );
@@ -88,46 +142,16 @@ function useTrelloWithSearch(
     return text.toLowerCase().includes(searchText.value);
   }
 
-  const allLists = computed(() => {
-    return trelloState.lists.map(list => {
-      return {
-        list: list,
-        cards: trelloState.cards
-          .filter(card => card.idList == list.id)
-          .map(card => {
-            return {
-              card: card,
-              checklists: trelloState.checklists.filter(
-                checklist => checklist.idCard == card.id
-              )
-            };
-          })
-      };
-    });
-  });
-
   const filteredLists = computed(() => {
-    return allLists.value.map(list => {
+    return trelloBoard.lists.map(list => {
       return {
         list: list.list,
         filteredCards: list.cards
           .map(card => {
-            let checkItemsCount = 0;
-            let completedCheckItemsCount = 0;
-            card.checklists.forEach(checklist =>
-              checklist.checkItems.forEach(item => {
-                checkItemsCount++;
-                if (item.state == "complete") {
-                  completedCheckItemsCount++;
-                }
-              })
-            );
-
             return {
               card: card.card,
-              completionRate: checkItemsCount
-                ? completedCheckItemsCount / checkItemsCount
-                : 0,
+              fullCard: card,
+              completionRate: card.completionRate,
               filteredDescription: isMatch(card.card.desc)
                 ? card.card.desc
                 : "",
@@ -158,7 +182,7 @@ function useTrelloWithSearch(
 
   const filteredBoard = computed(() => {
     return {
-      board: trelloState.board,
+      board: trelloBoard.board,
       filteredLists: filteredLists.value
     };
   });
@@ -173,8 +197,8 @@ function useTrelloWithSearch(
 export default defineComponent({
   components: { EvaIcon, HighlightMatches },
   props: {
-    trelloState: {
-      type: Object as PropType<TrelloState>,
+    trelloBoard: {
+      type: Object as PropType<FullBoard>,
       required: true
     },
     searchInput: {
@@ -185,14 +209,23 @@ export default defineComponent({
   setup(props, context) {
     const { searchInput } = toRefs(props);
     const { searchText, filteredBoard } = useTrelloWithSearch(
-      props.trelloState,
+      props.trelloBoard,
       searchInput
     );
 
-    function openCard(card: any) {
-      //@ts-ignore
-      window.open(card.card.url, "_blank").focus();
-    }
+    const openCard = ref<FullCard>();
+
+    // Hack until backdrop-filter support arrives in FF
+    watchEffect(() => {
+      let app = document.querySelector<HTMLElement>("#app");
+      if (app) {
+        if (openCard.value) {
+          app.style.filter = "blur(2px)";
+        } else {
+          app.style.filter = "";
+        }
+      }
+    });
 
     return {
       searchText,
@@ -248,6 +281,9 @@ export default defineComponent({
 }
 .list-item {
   padding: 12px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .search-matches {
@@ -261,22 +297,22 @@ ul li.completed:before {
   background: #19a187;
 }
 
-.labels {
-  margin-bottom: -8px;
-}
 .label {
   border-radius: 6px;
   letter-spacing: 0.5px;
   font-size: 12px;
   padding: 0px 8px;
   /*color: white;*/
-  margin: 0px 3px;
-  margin-bottom: -10px;
+  margin: 3px;
   display: inline-block;
   box-shadow: -2px -2px 4px 1px white, 2px 2px 4px 1px #b1b1a9cc;
 }
 .label-text {
   filter: brightness(80%) saturate(90%);
+}
+
+.description {
+  white-space: pre-line;
 }
 
 .progress-bar {
@@ -288,5 +324,42 @@ ul li.completed:before {
   width: 100%;
   text-align: center;
   padding-top: 4em;
+}
+
+.open-card-popup {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.open-card {
+  box-shadow: var(--blur-light) white, 12px 12px 16px 10px var(--shadow);
+  border-radius: 12px;
+  background: var(--background);
+  opacity: 1;
+  width: 80vmin;
+  height: 80vmin;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.open-card .list-item {
+  padding: 24px;
+  padding-bottom: 0px;
+  flex-grow: 1;
+}
+.open-card .labels {
+  margin-bottom: 12px;
+}
+.open-card .progress-bar {
+  min-height: 20px;
+}
+.scrollbar-y {
+  overflow-y: auto;
+  scrollbar-width: thin;
 }
 </style>

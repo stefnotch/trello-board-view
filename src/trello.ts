@@ -137,6 +137,24 @@ export interface TrelloState {
   checklists: Checklist[];
 }
 
+export interface FullCard {
+  card: Card;
+  completionRate: number;
+  itemsCompleted: number;
+  itemsCount: number;
+  checklists: Checklist[];
+}
+
+export interface FullList {
+  list: List;
+  cards: FullCard[];
+}
+
+export interface FullBoard {
+  board: Board | undefined;
+  lists: FullList[];
+}
+
 export function useTrelloState() {
   const state: TrelloState = reactive({
     board: undefined as Board | undefined,
@@ -231,10 +249,51 @@ export function useTrello(trelloState: TrelloState) {
     }
   }
 
+  const fullLists = computed(() => {
+    return trelloState.lists.map((list) => {
+      return {
+        list: list,
+        cards: trelloState.cards
+          .filter((card) => card.idList == list.id)
+          .map((card) => {
+            let checklists = trelloState.checklists.filter(
+              (checklist) => checklist.idCard == card.id
+            );
+            let itemsCount = 0;
+            let itemsCompleted = 0;
+            checklists.forEach((checklist) =>
+              checklist.checkItems.forEach((item) => {
+                itemsCount++;
+                if (item.state == "complete") {
+                  itemsCompleted++;
+                }
+              })
+            );
+
+            return {
+              card: card,
+              completionRate: itemsCount ? itemsCompleted / itemsCount : 0,
+              itemsCount,
+              itemsCompleted,
+              checklists: checklists,
+            } as FullCard;
+          }),
+      } as FullList;
+    });
+  });
+
+  const fullBoard = computed(() => {
+    return {
+      board: trelloState.board,
+      lists: fullLists.value,
+    } as FullBoard;
+  });
+
   return {
     boardId,
     fetchBoard,
     tryLoadCachedBoard,
     cachedBoardIds,
+    fullBoard,
   };
 }

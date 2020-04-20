@@ -19,7 +19,7 @@
                 type="text"
                 class="search-bar-input"
                 v-model="searchInput"
-                :placeholder="'Search ' + (trelloState.board ? trelloState.board.name : '')"
+                :placeholder="'Search ' + (trelloState.board && boardId != trello.boardId ? 'Cached ' : '') + (trelloState.board ? trelloState.board.name : '')"
               />
             </label>
           </div>
@@ -50,12 +50,11 @@
         </form>
       </div>
     </div>
-    <!-- TODO: make it clear that those are the cached values! -->
-    <trello-board :trelloState="trelloState" :searchInput="searchInput"></trello-board>
-
-    <div id="popup-window">
-      <!-- TODO: Wide shadow, because it hovers above the rest -->
+    <div>
+      <button class="card-small history-button">Show History</button>
     </div>
+    <!-- TODO: make it clear that those are the cached values! -->
+    <trello-board :trelloBoard="trello.fullBoard" :searchInput="searchInput"></trello-board>
   </div>
 </template>
 
@@ -240,9 +239,6 @@ ul li:before {
   font-size: 14px;
   color: rgb(61, 61, 61);
 }
-</style>
-
-<style scoped>
 .plain-link {
   text-decoration: none;
   color: inherit;
@@ -251,6 +247,9 @@ ul li:before {
   text-decoration: underline;
   cursor: pointer;
 }
+</style>
+
+<style scoped>
 .header {
   display: flex;
 
@@ -319,5 +318,11 @@ h2 {
 }
 .text-input-options li:hover {
   cursor: pointer;
+}
+
+.history-button {
+  font-size: 16;
+  font-weight: bold;
+  margin-left: 24px;
 }
 </style>
