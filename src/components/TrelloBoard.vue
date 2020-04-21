@@ -5,6 +5,14 @@
       <div class="open-card-popup" v-if="openCard" @click.self="openCard = undefined">
         <div class="open-card">
           <div class="list-item">
+            <eva-icon
+              class="close-button"
+              icon="close"
+              fill="grey"
+              :width="24"
+              :height="24"
+              @click="openCard = undefined"
+            />
             <div>
               <h3>
                 <a :href="openCard.card.url" class="plain-link">
@@ -34,17 +42,12 @@
                     v-for="checkItem in checklist.checkItems"
                     :key="checkItem.id"
                     :class="{'completed': checkItem.state == 'complete'}"
-                  >
-                    <highlight-matches :text="checkItem.name" :highlightText="searchText"></highlight-matches>
-                  </li>
+                  >{{checkItem.name}}</li>
                 </ul>
               </div>
             </div>
           </div>
-          <div
-            class="progress-bar"
-            :style="{'width': Math.round(openCard.completionRate * 100)+ '%'}"
-          ><!--{{openCard.itemsCompleted}}/{{openCard.itemsCount}}--></div>
+          <progress-bar :max="openCard.itemsCount" :value="openCard.itemsCompleted" :large="true"></progress-bar>
         </div>
       </div>
     </teleport>
@@ -95,10 +98,7 @@
                   </div>
                 </div>
               </div>
-              <div
-                class="progress-bar"
-                :style="{'width': Math.round(card.completionRate * 100)+ '%'}"
-              ></div>
+              <progress-bar :max="card.fullCard.itemsCount" :value="card.fullCard.itemsCompleted"></progress-bar>
             </div>
           </div>
         </div>
@@ -132,8 +132,12 @@ import {
 } from "./../trello";
 import EvaIcon from "./EvaIcon.vue";
 import HighlightMatches from "./HighlightMatches.vue";
+import ProgressBar from "./ProgressBar.vue";
 
-function useTrelloWithSearch(trelloBoard: FullBoard, searchInput: Ref<string>) {
+function useTrelloWithSearch(
+  trelloBoard: Ref<FullBoard>,
+  searchInput: Ref<string>
+) {
   let searchText = computed(() =>
     searchInput.value.length >= 2 ? searchInput.value.toLowerCase() : ""
   );
@@ -143,7 +147,7 @@ function useTrelloWithSearch(trelloBoard: FullBoard, searchInput: Ref<string>) {
   }
 
   const filteredLists = computed(() => {
-    return trelloBoard.lists.map(list => {
+    return trelloBoard.value.lists.map(list => {
       return {
         list: list.list,
         filteredCards: list.cards
@@ -151,7 +155,6 @@ function useTrelloWithSearch(trelloBoard: FullBoard, searchInput: Ref<string>) {
             return {
               card: card.card,
               fullCard: card,
-              completionRate: card.completionRate,
               filteredDescription: isMatch(card.card.desc)
                 ? card.card.desc
                 : "",
@@ -182,7 +185,7 @@ function useTrelloWithSearch(trelloBoard: FullBoard, searchInput: Ref<string>) {
 
   const filteredBoard = computed(() => {
     return {
-      board: trelloBoard.board,
+      board: trelloBoard.value.board,
       filteredLists: filteredLists.value
     };
   });
@@ -195,7 +198,7 @@ function useTrelloWithSearch(trelloBoard: FullBoard, searchInput: Ref<string>) {
 }
 
 export default defineComponent({
-  components: { EvaIcon, HighlightMatches },
+  components: { EvaIcon, HighlightMatches, ProgressBar },
   props: {
     trelloBoard: {
       type: Object as PropType<FullBoard>,
@@ -207,9 +210,9 @@ export default defineComponent({
     }
   },
   setup(props, context) {
-    const { searchInput } = toRefs(props);
+    const { searchInput, trelloBoard } = toRefs(props);
     const { searchText, filteredBoard } = useTrelloWithSearch(
-      props.trelloBoard,
+      trelloBoard,
       searchInput
     );
 
@@ -315,11 +318,6 @@ ul li.completed:before {
   white-space: pre-line;
 }
 
-.progress-bar {
-  background-color: #19a187;
-  height: 4px;
-}
-
 .no-board {
   width: 100%;
   text-align: center;
@@ -351,6 +349,7 @@ ul li.completed:before {
   padding: 24px;
   padding-bottom: 0px;
   flex-grow: 1;
+  position: relative;
 }
 .open-card .labels {
   margin-bottom: 12px;
@@ -361,5 +360,12 @@ ul li.completed:before {
 .scrollbar-y {
   overflow-y: auto;
   scrollbar-width: thin;
+}
+.close-button {
+  position: absolute;
+  right: 24px;
+}
+.close-button:hover {
+  cursor: pointer;
 }
 </style>

@@ -217,6 +217,11 @@ ul {
   padding-left: 24px;
 }
 
+ul li {
+  margin-bottom: 4px;
+  margin-top: 4px;
+}
+
 ul li:before {
   content: "";
   width: 12px;
