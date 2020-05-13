@@ -7,6 +7,8 @@
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "sourceMap": true,
+    "allowJs": true,
+    "checkJs": true,
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"]
