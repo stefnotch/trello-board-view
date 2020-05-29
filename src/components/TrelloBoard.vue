@@ -1,5 +1,4 @@
 <template>
-  <!-- TODO: make it clear that those are the cached values! -->
   <div class="lists-container">
     <teleport to="#popup-window">
       <div class="open-card-popup" v-if="openCard" @click.self="openCard = undefined">

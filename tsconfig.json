@@ -10,10 +10,8 @@
     "allowJs": true,
     "checkJs": true,
     "baseUrl": ".",
-    "paths": {
-      "@/*": ["src/*"]
-    },
-    "lib": ["esnext", "dom", "dom.iterable", "scripthost"]
+    "isolatedModules": true,
+    "lib": ["esnext", "dom", "dom.iterable"]
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"],
   "exclude": ["node_modules"]

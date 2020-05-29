@@ -22,8 +22,8 @@
 <script lang="ts">
 /** Taken from https://github.com/antonreshetov/vue-eva-icons */
 import { defineComponent, computed, ref, watch, watchEffect } from "vue";
-// @ts-ignore
-import * as eva from "eva-icons/eva";
+//@ts-ignore
+import * as eva from "eva-icons";
 
 export default defineComponent({
   props: {
@@ -52,8 +52,8 @@ export default defineComponent({
     const iconSvg = ref<HTMLElement>();
 
     const iconHtml = computed(() =>
-      eva.icons[props.icon]
-        ? eva.icons[props.icon].contents
+      eva.default.icons[props.icon]
+        ? eva.default.icons[props.icon].contents
         : (console.error(`Unknown icon ${props.icon}`), undefined)
     );
 
