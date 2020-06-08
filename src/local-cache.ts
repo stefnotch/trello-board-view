@@ -1,5 +1,5 @@
 export function useLocalCache() {
-  const localCacheName = "local-cache-";
+  const localCacheName = "local-cache/";
 
   function setCacheValue<T>(
     key: string,

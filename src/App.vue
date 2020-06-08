@@ -40,7 +40,7 @@
             <div class="text-input-options">
               <ul>
                 <li
-                  v-for="cachedBoardId in trello.cachedBoardIds"
+                  v-for="(_, cachedBoardId) in trello.cachedBoardIds"
                   :key="cachedBoardId"
                   @mousedown="boardId = cachedBoardId; trello.fetchBoard(boardId)"
                 >{{cachedBoardId}}</li>
@@ -60,7 +60,7 @@
 
 <script lang="ts">
 import { ref, defineComponent, watchEffect, watch, computed } from "vue";
-import { useTrello, Card, useTrelloState, TrelloState } from "./trello";
+import { useTrello, Card, TrelloState } from "./trello";
 import EvaIcon from "./components/EvaIcon.vue";
 import HighlightMatches from "./components/HighlightMatches.vue";
 import TrelloBoard from "./components/TrelloBoard.vue";
@@ -97,10 +97,9 @@ export default defineComponent({
   setup() {
     let urlParams = useURLParams();
 
-    let boardId = ref(urlParams.getParam("board") || "");
+    let boardId = ref(urlParams.getParam("board") ?? "");
 
-    const { trelloState } = useTrelloState();
-    const trello = useTrello(trelloState);
+    const trello = useTrello();
     watch(trello.boardId, value => urlParams.setParam("board", value));
     let loadedFromCache = trello.tryLoadCachedBoard(boardId.value);
     if (!loadedFromCache && !!boardId.value) {
@@ -111,7 +110,10 @@ export default defineComponent({
     watchEffect(() => (document.title = title.value));
 
     watchEffect(
-      () => (title.value = trelloState.board ? trelloState.board.name : "")
+      () =>
+        (title.value = trello.trelloState.board
+          ? trello.trelloState.board.name
+          : "")
     );
 
     const searchInput = ref("");
@@ -120,7 +122,7 @@ export default defineComponent({
       searchInput,
       boardId,
       trello,
-      trelloState,
+      trelloState: trello.trelloState,
       console
     };
   }

@@ -1,5 +1,6 @@
 import { ref, reactive, Ref, computed } from "vue";
 import { useLocalCache } from "./local-cache";
+import odiff from "odiff";
 
 export interface Board {
   id: string;
@@ -125,9 +126,13 @@ export interface Label {
   color: string;
 }
 
+interface CachedTrelloBoards {
+  [boardId: string]: null;
+}
+
 interface CachedTrelloBoard {
+  changes: { change: odiff.odiffResult; date: Date }[];
   state: TrelloState;
-  date: Date;
 }
 
 export interface TrelloState {
@@ -135,6 +140,7 @@ export interface TrelloState {
   lists: List[];
   cards: Card[];
   checklists: Checklist[];
+  date: Date;
 }
 
 export interface FullCard {
@@ -155,28 +161,27 @@ export interface FullBoard {
   lists: FullList[];
 }
 
-export function useTrelloState() {
-  const state: TrelloState = reactive({
+export function useTrello() {
+  const { setCacheValue, getCacheValue } = useLocalCache();
+
+  const trelloState: TrelloState = reactive({
     board: undefined as Board | undefined,
     lists: [] as List[],
     cards: [] as Card[],
     checklists: [] as Checklist[],
+    date: new Date(),
   });
 
-  return { trelloState: state };
-}
-
-export function useTrello(trelloState: TrelloState) {
-  const { setCacheValue, getCacheValue } = useLocalCache();
-
   const boardId = ref("");
-  const cachedBoardIds = ref<Set<string>>(
-    new Set<string>(getCacheValue<string[]>("trello-boards") || ["NQjLXRCP"])
+  const cachedBoardIds = ref<CachedTrelloBoards>(
+    getCacheValue<CachedTrelloBoards>("trello-boards") || {
+      NQjLXRCP: null,
+    }
   );
 
   function tryLoadCachedBoard(trelloBoardId: string) {
     let cachedValues = getCacheValue<CachedTrelloBoard>(
-      `trello-board-${trelloBoardId}`
+      `trello-board/${trelloBoardId}`
     );
 
     if (cachedValues && cachedValues.state) {
@@ -184,6 +189,7 @@ export function useTrello(trelloState: TrelloState) {
       trelloState.lists = cachedValues.state.lists;
       trelloState.cards = cachedValues.state.cards;
       trelloState.checklists = cachedValues.state.checklists;
+      trelloState.date = cachedValues.state.date;
       return true;
     }
     return false;
@@ -195,6 +201,7 @@ export function useTrello(trelloState: TrelloState) {
     trelloState.lists = [];
     trelloState.cards = [];
     trelloState.checklists = [];
+    trelloState.date = new Date();
     // TODO: figure out what happened since the last time you visited the page!
     // Basically, display the actions that Trello doesn't display.
     try {
@@ -218,34 +225,44 @@ export function useTrello(trelloState: TrelloState) {
         .then((r) => r.json())
         .then((val) => (trelloState.checklists = (val || []) as Checklist[]));
 
-      await Promise.all([boardFetch, listsFetch, cardsFetch, checklistsFetch]);
+      await Promise.allSettled([
+        boardFetch,
+        listsFetch,
+        cardsFetch,
+        checklistsFetch,
+      ]);
     } catch (e) {
       console.warn(e);
-      let allHaveValues =
-        !!trelloState.board &&
-        !!trelloState.lists &&
-        !!trelloState.cards &&
-        !!trelloState.checklists;
-      if (allHaveValues) {
-        tryLoadCachedBoard(boardId.value);
-      }
+      tryLoadCachedBoard(boardId.value);
+
+      return;
     }
 
-    if (
-      !!trelloState.board &&
-      !!trelloState.lists &&
-      !!trelloState.cards &&
-      !!trelloState.checklists
-    ) {
-      setCacheValue<CachedTrelloBoard>(`trello-board-${trelloBoardId}`, {
-        state: trelloState,
-        date: new Date(),
-      });
-      cachedBoardIds.value.add(trelloBoardId);
-      setCacheValue<string[]>(
-        `trello-boards`,
-        Array.from(cachedBoardIds.value.values())
+    if (trelloState.board) {
+      // Load last cached board
+      let cachedBoard =
+        getCacheValue<CachedTrelloBoard>(`trello-board/${trelloBoardId}`) ??
+        ({
+          changes: [],
+          state: trelloState,
+        } as CachedTrelloBoard);
+
+      // Calculate new diff and push
+      cachedBoard.changes.push(
+        ...odiff(cachedBoard.state, trelloState).map((v) => {
+          return { change: v, date: new Date() };
+        })
       );
+
+      // Set the new board
+      cachedBoard.state = trelloState;
+
+      setCacheValue<CachedTrelloBoard>(
+        `trello-board/${trelloBoardId}`,
+        cachedBoard
+      );
+      cachedBoardIds.value["trelloBoardId"] = null;
+      setCacheValue<CachedTrelloBoards>(`trello-boards`, cachedBoardIds.value);
     }
   }
 
@@ -289,11 +306,18 @@ export function useTrello(trelloState: TrelloState) {
     } as FullBoard;
   });
 
+  //function getHistoricalBoard(trelloBoardId: string, date: Date) {}
+
+  //function getDifferenceBoard(boardA, boardB) {}
+
   return {
     boardId,
+    trelloState,
     fetchBoard,
     tryLoadCachedBoard,
     cachedBoardIds,
     fullBoard,
+    // getHistoricalBoard,
+    // getDifferenceBoard,
   };
 }

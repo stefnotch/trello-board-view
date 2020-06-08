@@ -123,7 +123,6 @@ import {
 import {
   useTrello,
   Card,
-  useTrelloState,
   TrelloState,
   Checklist,
   FullBoard,
