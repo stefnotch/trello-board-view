@@ -19,7 +19,7 @@
                 type="text"
                 class="search-bar-input"
                 v-model="searchInput"
-                :placeholder="'Search ' + (trelloState.board && boardId != trello.boardId ? 'Cached ' : '') + (trelloState.board ? trelloState.board.name : '')"
+                :placeholder="'Search ' + (trelloState.board && boardId != trello.boardId.value ? 'Cached ' : '') + (trelloState.board ? trelloState.board.name : '')"
               />
             </label>
           </div>
@@ -28,19 +28,19 @@
       <div class="header-right">
         <form class="inset-small" @submit.prevent="trello.fetchBoard(boardId)">
           <input type="text" v-model="boardId" placeholder="Board ID" class="text-input" />
-          <button type="submit" :class="{'no-shadow': boardId == trello.boardId}">
+          <button type="submit" :class="{'no-shadow': boardId == trello.boardId.value}">
             <eva-icon
-              :icon="boardId != trello.boardId? 'arrow-forward' : 'refresh'"
+              :icon="boardId != trello.boardId.value? 'arrow-forward' : 'refresh'"
               :width="24"
               :height="24"
-              :fill="boardId != trello.boardId? 'var(--foreground-highlight)':'black'"
+              :fill="boardId != trello.boardId.value? 'var(--foreground-highlight)':'black'"
             />
           </button>
           <div class="text-input-options-container">
             <div class="text-input-options">
               <ul>
                 <li
-                  v-for="(_, cachedBoardId) in trello.cachedBoardIds"
+                  v-for="(_, cachedBoardId) in trello.cachedBoardIds.value"
                   :key="cachedBoardId"
                   @mousedown="boardId = cachedBoardId; trello.fetchBoard(boardId)"
                 >{{cachedBoardId}}</li>
@@ -54,7 +54,7 @@
       <button class="card-small history-button">Show History</button>
     </div>
     <!-- TODO: make it clear that those are the cached values! -->
-    <trello-board :trelloBoard="trello.fullBoard" :searchInput="searchInput"></trello-board>
+    <trello-board :trelloBoard="trello.fullBoard.value" :searchInput="searchInput"></trello-board>
   </div>
 </template>
 
@@ -123,7 +123,6 @@ export default defineComponent({
       boardId,
       trello,
       trelloState: trello.trelloState,
-      console
     };
   }
 });
