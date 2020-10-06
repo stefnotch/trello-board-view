@@ -6,7 +6,8 @@
           <a
             href="https://github.com/stefnotch/trello-board-view/"
             class="plain-link"
-          >Trello Roadmap Viewer</a>
+            >Trello Roadmap Viewer</a
+          >
         </h2>
         <span>by Stefnotch</span>
       </div>
@@ -14,12 +15,23 @@
         <div class="card-small" style="border: 3px solid white">
           <div class="inset-small">
             <label class="search-bar">
-              <eva-icon icon="search" :width="24" :height="24" class="search-bar-icon"></eva-icon>
+              <eva-icon
+                icon="search"
+                :width="24"
+                :height="24"
+                class="search-bar-icon"
+              ></eva-icon>
               <input
                 type="text"
                 class="search-bar-input"
                 v-model="searchInput"
-                :placeholder="'Search ' + (trelloState.board && boardId != trello.boardId.value ? 'Cached ' : '') + (trelloState.board ? trelloState.board.name : '')"
+                :placeholder="
+                  'Search ' +
+                  (trelloState.board && boardId != trello.boardId.value
+                    ? 'Cached '
+                    : '') +
+                  (trelloState.board ? trelloState.board.name : '')
+                "
               />
             </label>
           </div>
@@ -27,13 +39,27 @@
       </div>
       <div class="header-right">
         <form class="inset-small" @submit.prevent="trello.fetchBoard(boardId)">
-          <input type="text" v-model="boardId" placeholder="Board ID" class="text-input" />
-          <button type="submit" :class="{'no-shadow': boardId == trello.boardId.value}">
+          <input
+            type="text"
+            v-model="boardId"
+            placeholder="Board ID"
+            class="text-input"
+          />
+          <button
+            type="submit"
+            :class="{ 'no-shadow': boardId == trello.boardId.value }"
+          >
             <eva-icon
-              :icon="boardId != trello.boardId.value? 'arrow-forward' : 'refresh'"
+              :icon="
+                boardId != trello.boardId.value ? 'arrow-forward' : 'refresh'
+              "
               :width="24"
               :height="24"
-              :fill="boardId != trello.boardId.value? 'var(--foreground-highlight)':'black'"
+              :fill="
+                boardId != trello.boardId.value
+                  ? 'var(--foreground-highlight)'
+                  : 'black'
+              "
             />
           </button>
           <div class="text-input-options-container">
@@ -42,8 +68,13 @@
                 <li
                   v-for="(_, cachedBoardId) in trello.cachedBoardIds.value"
                   :key="cachedBoardId"
-                  @mousedown="boardId = cachedBoardId; trello.fetchBoard(boardId)"
-                >{{cachedBoardId}}</li>
+                  @mousedown="
+                    boardId = cachedBoardId;
+                    trello.fetchBoard(boardId);
+                  "
+                >
+                  {{ cachedBoardId }}
+                </li>
               </ul>
             </div>
           </div>
@@ -54,7 +85,10 @@
       <button class="card-small history-button">Show History</button>
     </div>
     <!-- TODO: make it clear that those are the cached values! -->
-    <trello-board :trelloBoard="trello.fullBoard.value" :searchInput="searchInput"></trello-board>
+    <trello-board
+      :trelloBoard="trello.fullBoard.value"
+      :searchInput="searchInput"
+    ></trello-board>
   </div>
 </template>
 
@@ -88,7 +122,7 @@ function useURLParams() {
 
   return {
     getParam,
-    setParam
+    setParam,
   };
 }
 
@@ -100,7 +134,7 @@ export default defineComponent({
     let boardId = ref(urlParams.getParam("board") ?? "");
 
     const trello = useTrello();
-    watch(trello.boardId, value => urlParams.setParam("board", value));
+    watch(trello.boardId, (value) => urlParams.setParam("board", value));
     let loadedFromCache = trello.tryLoadCachedBoard(boardId.value);
     if (!loadedFromCache && !!boardId.value) {
       trello.fetchBoard(boardId.value);
@@ -124,7 +158,7 @@ export default defineComponent({
       trello,
       trelloState: trello.trelloState,
     };
-  }
+  },
 });
 </script>
 

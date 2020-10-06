@@ -261,7 +261,7 @@ export function useTrello() {
         `trello-board/${trelloBoardId}`,
         cachedBoard
       );
-      cachedBoardIds.value["trelloBoardId"] = null;
+      cachedBoardIds.value[trelloBoardId] = null;
       setCacheValue<CachedTrelloBoards>(`trello-boards`, cachedBoardIds.value);
     }
   }
