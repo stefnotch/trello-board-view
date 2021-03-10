@@ -151,7 +151,8 @@ export default defineComponent({
           : "")
     );
 
-    const searchInput = ref("");
+    const searchInput = ref(urlParams.getParam("search") ?? "");
+    watch(searchInput, (value) => urlParams.setParam("search", value));
 
     return {
       searchInput,
