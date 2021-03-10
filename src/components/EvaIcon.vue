@@ -29,37 +29,37 @@ export default defineComponent({
   props: {
     icon: {
       type: String,
-      required: true
+      required: true,
     },
     width: {
       type: [String, Number],
-      default: 18
+      default: 18,
     },
     height: {
       type: [String, Number],
-      default: 18
+      default: 18,
     },
     animation: {
       type: String,
-      default: undefined
+      default: undefined,
     },
     fill: {
       type: String,
-      default: "inherit"
-    }
+      default: "inherit",
+    },
   },
   setup(props, context) {
     const iconSvg = ref<HTMLElement>();
 
     const iconHtml = computed(() =>
-      eva.default.icons[props.icon]
-        ? eva.default.icons[props.icon].contents
+      eva.icons[props.icon]
+        ? eva.icons[props.icon].contents
         : (console.error(`Unknown icon ${props.icon}`), undefined)
     );
 
     return {
-      iconHtml
+      iconHtml,
     };
-  }
+  },
 });
 </script>
