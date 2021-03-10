@@ -25,6 +25,7 @@
                 type="text"
                 class="search-bar-input"
                 v-model="searchInput"
+                autofocus
                 :placeholder="
                   'Search ' +
                   (trelloState.board && boardId != trello.boardId.value
@@ -201,6 +202,9 @@ h2 {
   border: 0px;
   font-size: 18px;
   flex: 1;
+}
+.search-bar-input:focus {
+  outline: none;
 }
 .search-bar-input::placeholder {
   color: black;
